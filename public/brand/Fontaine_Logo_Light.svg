@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1520" height="256" viewBox="0 0 760 128">
+
+<g transform="translate(10 10)">
+<defs>
+  <linearGradient id="fgrad" gradientUnits="userSpaceOnUse" x1="20" y1="85" x2="85" y2="20">
+    <stop offset="0%" stop-color="#7451E8"/>
+    <stop offset="48%" stop-color="#20BDF3"/>
+    <stop offset="100%" stop-color="#00F2FE"/>
+  </linearGradient>
+  <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#17233A"/>
+    <stop offset="100%" stop-color="#0A0D14"/>
+  </linearGradient>
+</defs>
+<rect x="0.5" y="0.5" width="107" height="107" rx="27" fill="url(#tile)" stroke="#30415B" />
+<path d="M29 77V31Q29 26 34 26H74" fill="none" stroke="url(#fgrad)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M35 50H61" fill="none" stroke="url(#fgrad)" stroke-width="11" stroke-linecap="round"/>
+<path d="M61.5 68L72 57L83 41" fill="none" stroke="#A084F7" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="61.5" cy="68" r="3.3" fill="#A084F7"/><circle cx="72" cy="57" r="3.3" fill="#20BDF3"/><circle cx="83" cy="41" r="4.2" fill="#00F2FE"/>
+</g>
+<text x="140" y="71" font-family="Lato,Arial,sans-serif" font-size="51" font-weight="900" letter-spacing="4.1" fill="#0E1A2B">FONTAINE</text>
+<text x="144" y="100" font-family="Lato,Arial,sans-serif" font-size="13.5" font-weight="700" letter-spacing="4.5" fill="#5C6C80">DIGITAL  /  AI  /  GROWTH</text>
+</svg>

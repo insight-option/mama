@@ -39,3 +39,12 @@ next-env.d.ts
 .amplify
 amplify_outputs*
 amplifyconfiguration*
+# testing artifacts
+/test-results/
+/playwright-report/
+/blob-report/
+
+# local env (keep the example)
+.env
+.env.local
+!.env.example
