@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Design tokens. Channels are space-separated RGB so Tailwind can apply
+ * opacity (e.g. bg-forest/80). Only leaf and forest are confirmed brand
+ * colors; the rest are proposed and editable.
+ */
+:root {
+  --color-leaf: 75 168 46; /* #4BA82E Fresh Leaf Green */
+  --color-forest: 11 37 24; /* #0B2518 Deep Forest Green */
+  --color-ivory: 247 245 239; /* #F7F5EF background (proposed) */
+  --color-surface: 255 255 255; /* #FFFFFF */
+  --color-ink: 24 35 26; /* #18231A main text (proposed) */
+  --color-muted: 102 113 104; /* #667168 secondary text (proposed) */
+  --color-line: 228 232 225; /* #E4E8E1 borders (proposed) */
+
+  --radius-card: 1rem;
+  --max-width: 72rem;
+
+  --font-body: var(--font-tajawal);
+  color-scheme: light;
+}
+
+html[lang="en"] {
+  --font-body: var(--font-inter);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply min-h-screen bg-ivory font-sans text-ink antialiased;
+  }
+
+  /* Arabic script needs more line height than Latin text. */
+  html[lang="ar"] body {
+    line-height: 1.75;
+  }
+
+  :focus-visible {
+    @apply outline outline-2 outline-offset-2 outline-leaf;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

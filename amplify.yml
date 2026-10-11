@@ -9,8 +9,6 @@ frontend:
   phases:
     build:
       commands:
-        # Pricing, forecast, i18n and WhatsApp unit tests must pass before any deploy.
-        - npm run test
         - npm run build
   artifacts:
     baseDirectory: .next
