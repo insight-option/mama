@@ -1,3 +1,4 @@
+import type { LoginErrorKey } from "@/lib/admin/auth-errors";
 import type { Locale } from "@/lib/i18n";
 
 type AdminCopy = {
@@ -34,20 +35,7 @@ type AdminCopy = {
     notAdminTitle: string;
     notAdminBody: string;
     useAnother: string;
-    errors: Record<
-      | "credentials"
-      | "required"
-      | "email"
-      | "mismatch"
-      | "weak"
-      | "code"
-      | "expired"
-      | "tooMany"
-      | "notConfirmed"
-      | "network"
-      | "unknown",
-      string
-    >;
+    errors: Record<LoginErrorKey, string>;
   };
   products: {
     title: string;
@@ -144,7 +132,7 @@ export const adminCopy: Record<Locale, AdminCopy> = {
       newPasswordIntro: "هذا أول دخول لهذا الحساب. اختر كلمة مرور جديدة لإكماله.",
       newPassword: "كلمة المرور الجديدة",
       confirmPassword: "تأكيد كلمة المرور",
-      passwordRules: "8 أحرف على الأقل، وتشمل حرفاً كبيراً وصغيراً ورقماً ورمزاً.",
+      passwordRules: "8 أحرف على الأقل، وتشمل حرفاً إنجليزياً كبيراً وحرفاً صغيراً ورقماً ورمزاً مثل ! @ # $ % & * ?",
       setPassword: "حفظ ومتابعة",
       resetTitle: "استعادة كلمة المرور",
       resetIntro: "سنرسل رمز تحقق إلى بريدك الإلكتروني.",
@@ -167,6 +155,9 @@ export const adminCopy: Record<Locale, AdminCopy> = {
         tooMany: "محاولات كثيرة. انتظر قليلاً ثم حاول مجدداً.",
         notConfirmed: "الحساب غير مؤكد في Cognito.",
         network: "تعذّر الاتصال. تحقق من الإنترنت وحاول مجدداً.",
+        sessionExpired: "انتهت جلسة تسجيل الدخول قبل حفظ كلمة المرور الجديدة. سجّل الدخول مجدداً بكلمة المرور المؤقتة.",
+        passwordRejected: "لم يقبل النظام كلمة المرور الجديدة. سجّل الدخول مجدداً بكلمة المرور المؤقتة واختر كلمة مرور تستوفي الشروط.",
+        tempExpired: "انتهت صلاحية كلمة المرور المؤقتة. اطلب من المسؤول إرسال كلمة مرور مؤقتة جديدة من Cognito.",
         unknown: "حدث خطأ غير متوقع. حاول مجدداً.",
       },
     },
@@ -277,7 +268,7 @@ export const adminCopy: Record<Locale, AdminCopy> = {
       newPasswordIntro: "This is the first sign-in for this account. Choose a new password to continue.",
       newPassword: "New password",
       confirmPassword: "Confirm password",
-      passwordRules: "At least 8 characters, with an uppercase letter, a lowercase letter, a number and a symbol.",
+      passwordRules: "At least 8 characters, with an uppercase and a lowercase English letter, a number and a symbol such as ! @ # $ % & * ?",
       setPassword: "Save and continue",
       resetTitle: "Reset password",
       resetIntro: "We will email you a verification code.",
@@ -300,6 +291,9 @@ export const adminCopy: Record<Locale, AdminCopy> = {
         tooMany: "Too many attempts. Wait a moment and try again.",
         notConfirmed: "This account is not confirmed in Cognito.",
         network: "Could not connect. Check your internet and try again.",
+        sessionExpired: "Your sign-in session expired before the new password was saved. Sign in again with the temporary password.",
+        passwordRejected: "The new password was not accepted. Sign in again with the temporary password and choose one that meets the requirements.",
+        tempExpired: "The temporary password has expired. Ask an administrator to send a new one from Cognito.",
         unknown: "Something went wrong. Please try again.",
       },
     },

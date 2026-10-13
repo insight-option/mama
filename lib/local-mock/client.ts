@@ -7,7 +7,10 @@
 // Test accounts (any password works unless noted):
 //   any email                → ADMIN
 //   staff@…                  → signed in, but not in the ADMIN group
-//   new@…                    → must choose a new password first
+//   new@…                    → must choose a new password first; like
+//                              Cognito, that session expires (3 min, or
+//                              localStorage "mama-local-mock-session-ms")
+//                              and dies after one failed answer
 //   password "wrong"         → "incorrect email or password"
 //   reset code "123456"      → accepted; any other code is rejected
 import type {
@@ -17,6 +20,7 @@ import type {
   signIn as SignIn,
   SignInOutput,
 } from "aws-amplify/auth";
+import { isStrongPassword } from "@/lib/admin/auth-errors";
 import type { ProductInput, ProductRecord } from "@/lib/products";
 
 const SESSION_KEY = "mama-local-mock-session";
@@ -24,8 +28,8 @@ const ADMIN_HEADER = { "x-local-mock-admin": "1" };
 
 type Session = { email: string; admin: boolean };
 
-function named(name: string) {
-  return Object.assign(new Error(`[local mock] ${name}`), { name });
+function named(name: string, message = `[local mock] ${name}`) {
+  return Object.assign(new Error(message), { name });
 }
 
 function readStored(): Session | null {
@@ -48,16 +52,23 @@ function store(session: Session | null) {
 
 // --- Auth -----------------------------------------------------------------
 
-let pendingNewPassword: string | null = null;
+let pendingNewPassword: { email: string; startedAt: number } | null = null;
+const sessionMs = () => {
+  try {
+    return Number(localStorage.getItem("mama-local-mock-session-ms")) || 180_000;
+  } catch {
+    return 180_000;
+  }
+};
 const done = (): SignInOutput => ({ isSignedIn: true, nextStep: { signInStep: "DONE" } });
 const delay = () => new Promise((r) => setTimeout(r, 250));
 
 export const signIn = (async ({ username, password }: { username: string; password?: string }) => {
   await delay();
   if (readStored()) throw named("UserAlreadyAuthenticatedException");
-  if (!password || password === "wrong") throw named("NotAuthorizedException");
+  if (!password || password === "wrong") throw named("NotAuthorizedException", "Incorrect username or password.");
   if (username.startsWith("new")) {
-    pendingNewPassword = username;
+    pendingNewPassword = { email: username, startedAt: Date.now() };
     return {
       isSignedIn: false,
       nextStep: { signInStep: "CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED" },
@@ -67,11 +78,19 @@ export const signIn = (async ({ username, password }: { username: string; passwo
   return done();
 }) as typeof SignIn;
 
-export const confirmSignIn = (async () => {
+export const confirmSignIn = (async ({ challengeResponse }: { challengeResponse: string }) => {
   await delay();
-  if (!pendingNewPassword) throw named("NotAuthorizedException");
-  store({ email: pendingNewPassword, admin: true });
+  const pending = pendingNewPassword;
+  // Like Cognito: one answer per session, and the session expires.
   pendingNewPassword = null;
+  if (!pending) throw named("NotAuthorizedException", "Invalid session for the user.");
+  if (Date.now() - pending.startedAt > sessionMs()) {
+    throw named("NotAuthorizedException", "Invalid session for the user, session is expired.");
+  }
+  if (!isStrongPassword(challengeResponse)) {
+    throw named("InvalidPasswordException", "Password does not conform to policy");
+  }
+  store({ email: pending.email, admin: true });
   return done();
 }) as unknown as typeof ConfirmSignIn;
 

@@ -3,45 +3,25 @@
 import { confirmResetPassword, confirmSignIn, resetPassword, signIn, type SignInOutput } from "@/lib/admin/auth";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Wordmark } from "@/components/layout/Wordmark";
 import { LockIcon } from "@/components/ui/icons";
 import { adminCopy } from "@/lib/admin-copy";
+import {
+  challengeIsStale,
+  describeError,
+  isStrongPassword,
+  loginErrorKey,
+  newPasswordFailure,
+  type LoginErrorKey,
+} from "@/lib/admin/auth-errors";
 import type { Locale } from "@/lib/i18n";
 import { useAdminAuth } from "./AdminAuth";
 
 type Step = "signIn" | "newPassword" | "forgot" | "forgotCode" | "notAdmin";
-type ErrorKey = keyof (typeof adminCopy)["en"]["login"]["errors"];
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-// Matches the Cognito pool policy: 8+ chars, upper, lower, number, symbol.
-const strong = (p: string) =>
-  p.length >= 8 && /[a-z]/.test(p) && /[A-Z]/.test(p) && /\d/.test(p) && /[^A-Za-z0-9]/.test(p);
-
-function errorKey(error: unknown): ErrorKey {
-  const name = (error as { name?: string })?.name ?? "";
-  switch (name) {
-    case "NotAuthorizedException":
-    case "UserNotFoundException":
-      return "credentials";
-    case "InvalidPasswordException":
-      return "weak";
-    case "CodeMismatchException":
-      return "code";
-    case "ExpiredCodeException":
-      return "expired";
-    case "LimitExceededException":
-    case "TooManyRequestsException":
-    case "TooManyFailedAttemptsException":
-      return "tooMany";
-    case "UserNotConfirmedException":
-      return "notConfirmed";
-    case "NetworkError":
-      return "network";
-    default:
-      return typeof navigator !== "undefined" && !navigator.onLine ? "network" : "unknown";
-  }
-}
+const online = () => typeof navigator === "undefined" || navigator.onLine;
 
 const input =
   "block w-full rounded-2xl border border-line bg-surface px-4 py-3 text-base text-ink outline-none transition focus:border-forest focus:ring-2 focus:ring-leaf/40";
@@ -60,8 +40,10 @@ export function LoginForm({ locale }: { locale: Locale }) {
   const [confirm, setConfirm] = useState("");
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<ErrorKey | null>(null);
+  const [error, setError] = useState<LoginErrorKey | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // When Cognito last asked for a new password (start of its challenge session).
+  const challengeStarted = useRef(0);
 
   // Already signed in as an admin: go straight to the workspace.
   useEffect(() => {
@@ -80,6 +62,7 @@ export function LoginForm({ locale }: { locale: Locale }) {
       case "DONE":
         return finish();
       case "CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED":
+        challengeStarted.current = Date.now();
         setStep("newPassword");
         return;
       case "RESET_PASSWORD":
@@ -93,19 +76,23 @@ export function LoginForm({ locale }: { locale: Locale }) {
     }
   };
 
-  const run = async (action: () => Promise<void>) => {
+  const run = async (action: () => Promise<void>, onFailure?: (err: unknown) => void) => {
     setBusy(true);
     setError(null);
     setNotice(null);
     try {
       await action();
     } catch (err) {
+      // Code and Cognito's message only (they never contain what was typed).
+      console.warn("[admin login]", describeError(err));
       if ((err as { name?: string })?.name === "UserAlreadyAuthenticatedException") {
         await finish();
       } else if ((err as { name?: string })?.name === "PasswordResetRequiredException") {
         setStep("forgot");
+      } else if (onFailure) {
+        onFailure(err);
       } else {
-        setError(errorKey(err));
+        setError(loginErrorKey(err, online()));
       }
     } finally {
       setBusy(false);
@@ -115,17 +102,62 @@ export function LoginForm({ locale }: { locale: Locale }) {
   const onSignIn = (e: React.FormEvent) => {
     e.preventDefault();
     const username = email.trim().toLowerCase();
-    if (!username || !password) return setError("required");
+    // Cognito passwords cannot start or end with a space; pasting the
+    // temporary password from the invitation email often adds one.
+    const secret = password.trim();
+    if (!username || !secret) return setError("required");
     if (!EMAIL.test(username)) return setError("email");
-    run(async () => handleNextStep(await signIn({ username, password })));
+    run(async () => handleNextStep(await signIn({ username, password: secret })));
   };
 
   const onNewPassword = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPassword || !confirm) return setError("required");
     if (newPassword !== confirm) return setError("mismatch");
-    if (!strong(newPassword)) return setError("weak");
-    run(async () => handleNextStep(await confirmSignIn({ challengeResponse: newPassword })));
+    if (!isStrongPassword(newPassword)) return setError("weak");
+
+    const username = email.trim().toLowerCase();
+    // Cognito's challenge session expires 3 minutes after the temporary
+    // password is accepted, and choosing a password often takes longer.
+    // The temporary password is still in memory, so start a fresh challenge
+    // instead of failing with "Invalid session".
+    const renew = async (): Promise<SignInOutput | null> => {
+      const output = await signIn({ username, password: password.trim() });
+      if (output.nextStep.signInStep !== "CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED") return output;
+      challengeStarted.current = Date.now();
+      return null;
+    };
+    const answer = () => confirmSignIn({ challengeResponse: newPassword });
+
+    run(
+      async () => {
+        if (challengeIsStale(challengeStarted.current)) {
+          const other = await renew();
+          if (other) return handleNextStep(other);
+        }
+        let output: SignInOutput;
+        try {
+          output = await answer();
+        } catch (err) {
+          if (loginErrorKey(err) !== "sessionExpired") throw err;
+          const other = await renew();
+          if (other) return handleNextStep(other);
+          output = await answer();
+        }
+        await handleNextStep(output);
+      },
+      (err) => {
+        // The challenge session cannot be retried: start a fresh sign-in.
+        const { key, restart } = newPasswordFailure(err, online());
+        if (restart) {
+          setStep("signIn");
+          setPassword("");
+          setNewPassword("");
+          setConfirm("");
+        }
+        setError(key);
+      },
+    );
   };
 
   const onSendCode = (e: React.FormEvent) => {
@@ -142,7 +174,7 @@ export function LoginForm({ locale }: { locale: Locale }) {
     e.preventDefault();
     if (!code || !newPassword || !confirm) return setError("required");
     if (newPassword !== confirm) return setError("mismatch");
-    if (!strong(newPassword)) return setError("weak");
+    if (!isStrongPassword(newPassword)) return setError("weak");
     run(async () => {
       await confirmResetPassword({
         username: email.trim().toLowerCase(),
