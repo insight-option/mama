@@ -103,3 +103,46 @@ export const CHALLENGE_REFRESH_MS = 150_000;
 export function challengeIsStale(startedAt: number, now = Date.now()): boolean {
   return !startedAt || now - startedAt >= CHALLENGE_REFRESH_MS;
 }
+
+type SignInStep = { nextStep: { signInStep: string } };
+
+/**
+ * Answers the new-password challenge (LoginForm's "Save and continue"). The
+ * temporary password is still in memory, so a stale or expired challenge is
+ * replaced by signing in again and answered once more. Resolves with the
+ * step to continue from; any other failure is thrown to the caller.
+ */
+export async function answerNewPassword<T extends SignInStep>({
+  startedAt,
+  signInAgain,
+  answer,
+  onNewChallenge,
+  now = Date.now,
+}: {
+  startedAt: number;
+  signInAgain: () => Promise<T>;
+  answer: () => Promise<T>;
+  onNewChallenge: (startedAt: number) => void;
+  now?: () => number;
+}): Promise<T> {
+  // null: a fresh challenge is ready to answer; otherwise Cognito moved on.
+  const renew = async (): Promise<T | null> => {
+    const output = await signInAgain();
+    if (output.nextStep.signInStep !== "CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED") return output;
+    onNewChallenge(now());
+    return null;
+  };
+
+  if (challengeIsStale(startedAt, now())) {
+    const other = await renew();
+    if (other) return other;
+  }
+  try {
+    return await answer();
+  } catch (err) {
+    if (loginErrorKey(err) !== "sessionExpired") throw err;
+    const other = await renew();
+    if (other) return other;
+    return answer();
+  }
+}

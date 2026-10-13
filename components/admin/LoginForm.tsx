@@ -8,7 +8,7 @@ import { Wordmark } from "@/components/layout/Wordmark";
 import { LockIcon } from "@/components/ui/icons";
 import { adminCopy } from "@/lib/admin-copy";
 import {
-  challengeIsStale,
+  answerNewPassword,
   describeError,
   isStrongPassword,
   loginErrorKey,
@@ -117,35 +117,21 @@ export function LoginForm({ locale }: { locale: Locale }) {
     if (!isStrongPassword(newPassword)) return setError("weak");
 
     const username = email.trim().toLowerCase();
-    // Cognito's challenge session expires 3 minutes after the temporary
-    // password is accepted, and choosing a password often takes longer.
-    // The temporary password is still in memory, so start a fresh challenge
-    // instead of failing with "Invalid session".
-    const renew = async (): Promise<SignInOutput | null> => {
-      const output = await signIn({ username, password: password.trim() });
-      if (output.nextStep.signInStep !== "CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED") return output;
-      challengeStarted.current = Date.now();
-      return null;
-    };
-    const answer = () => confirmSignIn({ challengeResponse: newPassword });
-
     run(
-      async () => {
-        if (challengeIsStale(challengeStarted.current)) {
-          const other = await renew();
-          if (other) return handleNextStep(other);
-        }
-        let output: SignInOutput;
-        try {
-          output = await answer();
-        } catch (err) {
-          if (loginErrorKey(err) !== "sessionExpired") throw err;
-          const other = await renew();
-          if (other) return handleNextStep(other);
-          output = await answer();
-        }
-        await handleNextStep(output);
-      },
+      async () =>
+        handleNextStep(
+          // Cognito's challenge session expires 3 minutes after the temporary
+          // password is accepted, and choosing a password often takes longer:
+          // a fresh challenge replaces it instead of failing with "Invalid session".
+          await answerNewPassword({
+            startedAt: challengeStarted.current,
+            signInAgain: () => signIn({ username, password: password.trim() }),
+            answer: () => confirmSignIn({ challengeResponse: newPassword }),
+            onNewChallenge: (at) => {
+              challengeStarted.current = at;
+            },
+          }),
+        ),
       (err) => {
         // The challenge session cannot be retried: start a fresh sign-in.
         const { key, restart } = newPasswordFailure(err, online());
