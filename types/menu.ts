@@ -16,8 +16,13 @@ export type Pricing =
   | { type: "serving"; options: ServingOption[] };
 
 export type MenuImage = {
-  /** Site path of a file in /public, e.g. "/photo.jpeg". */
+  /**
+   * Site path of a file in /public, e.g. "/photo.jpeg", or the image route
+   * "/api/img/<id>" for photos uploaded from the admin workspace.
+   */
   src: string;
+  /** Served by the image route from S3 (not a static file). */
+  remote?: boolean;
   width: number;
   height: number;
   alt: Localized;
@@ -37,11 +42,23 @@ export type MenuItem = {
   /** Without an image the card shows a branded placeholder. */
   image?: MenuImage;
   available: boolean;
+  /** Active offer. Prices replace the regular ones while it is set. */
+  offer?: Offer;
+  /** Shown in the home page highlights. */
+  featured?: boolean;
   /**
    * Reserved for allergen information. Leave empty until the restaurant
    * verifies allergens; nothing here is shown to customers yet.
    */
   allergens?: string[];
+};
+
+export type Offer = {
+  label?: Localized;
+  /** Offer price for fixed-price dishes. */
+  price?: number;
+  /** Offer prices per serving for dishes with serving options. */
+  servingPrices?: Partial<Record<ServingId, number>>;
 };
 
 export type MenuCategory = {

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { restaurant, siteUrl } from "@/config/restaurant";
-import { locales, type Locale } from "@/lib/i18n";
+import type { Locale } from "@/lib/i18n";
 
 const copy: Record<Locale, { title: string; description: string }> = {
   ar: {
@@ -19,7 +19,8 @@ export function buildMetadata(locale: Locale): Metadata {
   const { title, description } = copy[locale];
 
   const metadata: Metadata = {
-    title,
+    // Inner pages set their own title, shown as "Page | brand".
+    title: { default: title, template: `%s | ${restaurant.brandName}` },
     description,
     applicationName: restaurant.brandName,
     openGraph: {
@@ -32,14 +33,10 @@ export function buildMetadata(locale: Locale): Metadata {
     twitter: { card: "summary", title, description },
   };
 
-  if (siteUrl) {
-    metadata.metadataBase = new URL(siteUrl);
-    metadata.alternates = {
-      canonical: `/${locale}`,
-      languages: Object.fromEntries(locales.map((l) => [l, `/${l}`])),
-    };
-    metadata.openGraph = { ...metadata.openGraph, url: `/${locale}` };
-  }
+  // Lets pages use relative URLs for share images (e.g. /api/img/<id>).
+  // Page-specific URLs (canonical, og:url) are not set here: this metadata
+  // is inherited by every page of the language.
+  if (siteUrl) metadata.metadataBase = new URL(siteUrl);
 
   return metadata;
 }

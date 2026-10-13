@@ -39,3 +39,6 @@ next-env.d.ts
 .amplify
 amplify_outputs*
 amplifyconfiguration*
+
+# local mock admin data (npm run dev:mock)
+/.local-mock/

@@ -1,10 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Tajawal } from "next/font/google";
-import { CartDrawer } from "@/components/cart/CartDrawer";
-import { CartProvider } from "@/components/cart/CartProvider";
-import { MobileCartBar } from "@/components/cart/MobileCartBar";
-import { SiteFooter } from "@/components/layout/SiteFooter";
-import { SiteHeader } from "@/components/layout/SiteHeader";
+import { El_Messiri, Fraunces, Inter, Tajawal } from "next/font/google";
+import { LocalMockBanner } from "@/components/local-mock/LocalMockBanner";
 import { dictionaries } from "@/lib/dictionaries";
 import { getDirection, locales, type Locale } from "@/lib/i18n";
 import { buildMetadata } from "@/lib/metadata";
@@ -20,6 +16,21 @@ const tajawal = Tajawal({
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
+  display: "swap",
+});
+
+// Display faces for headings only.
+const messiri = El_Messiri({
+  subsets: ["arabic", "latin"],
+  weight: ["600", "700"],
+  variable: "--font-messiri",
+  display: "swap",
+});
+
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+  variable: "--font-fraunces",
   display: "swap",
 });
 
@@ -57,24 +68,17 @@ export default function LocaleLayout({
     <html
       lang={locale}
       dir={getDirection(locale)}
-      className={`${tajawal.variable} ${inter.variable}`}
+      className={`${tajawal.variable} ${inter.variable} ${messiri.variable} ${fraunces.variable}`}
     >
       <body className="flex min-h-screen flex-col">
         <a
           href="#main"
-          className="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-50 focus:rounded-full focus:bg-forest focus:px-4 focus:py-2 focus:text-white"
+          className="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-[60] focus:rounded-full focus:bg-forest focus:px-4 focus:py-2 focus:text-white"
         >
           {dictionaries[locale].skipToContent}
         </a>
-        <CartProvider>
-          <SiteHeader locale={locale} />
-          <main id="main" className="flex-1">
-            {children}
-          </main>
-          <SiteFooter locale={locale} />
-          <MobileCartBar locale={locale} />
-          <CartDrawer locale={locale} />
-        </CartProvider>
+        {children}
+        <LocalMockBanner locale={locale} />
       </body>
     </html>
   );

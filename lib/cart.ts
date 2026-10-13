@@ -1,12 +1,11 @@
 import { restaurant } from "@/config/restaurant";
-import { menu } from "@/data/menu";
 import type { MenuItem, ServingId } from "@/types/menu";
 
 export type Fulfillment = "delivery" | "pickup";
 
 /**
  * What the browser stores: dish ids, serving and quantity only. Prices are
- * always looked up from data/menu.ts, never read from storage.
+ * always looked up from the current catalogue, never read from storage.
  */
 export type CartLine = {
   itemId: string;
@@ -22,9 +21,19 @@ export type CartState = {
 export type ResolvedLine = CartLine & {
   key: string;
   item: MenuItem;
+  /** Price charged: the offer price while an offer is active. */
   unitPrice: number;
+  /** Regular price, for showing the saving next to an offer. */
+  regularUnitPrice: number;
   lineTotal: number;
 };
+
+/** Products by id, as currently published. */
+export type Catalog = Map<string, MenuItem>;
+
+export function createCatalog(items: MenuItem[]): Catalog {
+  return new Map(items.map((item) => [item.id, item]));
+}
 
 export type CartTotals = {
   itemCount: number;
@@ -37,14 +46,12 @@ export const MAX_QUANTITY = 99;
 export const STORAGE_KEY = "mama-food-cart-v1";
 export const emptyCart: CartState = { lines: [], fulfillment: "delivery" };
 
-const itemsById = new Map(menu.map((item) => [item.id, item]));
-
 /** Each dish + serving pair is its own line, e.g. "mansaf:two". */
 export function lineKey(line: Pick<CartLine, "itemId" | "servingId">): string {
   return line.servingId ? `${line.itemId}:${line.servingId}` : line.itemId;
 }
 
-/** Current price for a dish and serving, or null if the pair is not valid. */
+/** Regular price for a dish and serving, or null if the pair is not valid. */
 export function unitPriceFor(
   item: MenuItem,
   servingId?: ServingId,
@@ -56,18 +63,41 @@ export function unitPriceFor(
   return option ? option.price : null;
 }
 
-export function resolveLines(lines: CartLine[]): ResolvedLine[] {
+/** Price charged now: the offer price when an offer applies, else regular. */
+export function effectivePriceFor(
+  item: MenuItem,
+  servingId?: ServingId,
+): number | null {
+  const regular = unitPriceFor(item, servingId);
+  if (regular === null || !item.offer) return regular;
+  const offer =
+    item.pricing.type === "fixed"
+      ? item.offer.price
+      : servingId
+        ? item.offer.servingPrices?.[servingId]
+        : undefined;
+  return typeof offer === "number" && offer >= 0 && offer < regular
+    ? offer
+    : regular;
+}
+
+export function resolveLines(
+  lines: CartLine[],
+  catalog: Catalog,
+): ResolvedLine[] {
   const resolved: ResolvedLine[] = [];
   for (const line of lines) {
-    const item = itemsById.get(line.itemId);
+    const item = catalog.get(line.itemId);
     if (!item || !item.available) continue;
-    const unitPrice = unitPriceFor(item, line.servingId);
-    if (unitPrice === null) continue;
+    const regularUnitPrice = unitPriceFor(item, line.servingId);
+    const unitPrice = effectivePriceFor(item, line.servingId);
+    if (unitPrice === null || regularUnitPrice === null) continue;
     resolved.push({
       ...line,
       key: lineKey(line),
       item,
       unitPrice,
+      regularUnitPrice,
       lineTotal: unitPrice * line.quantity,
     });
   }
@@ -130,7 +160,10 @@ export function removeLine(lines: CartLine[], key: string): CartLine[] {
  * Reads stored data defensively: anything malformed, unknown, unavailable
  * or with an invalid serving is dropped, and duplicate lines are merged.
  */
-export function parseStoredCart(raw: string | null): CartState {
+export function parseStoredCart(
+  raw: string | null,
+  catalog: Catalog,
+): CartState {
   if (!raw) return emptyCart;
   try {
     const data = JSON.parse(raw) as Partial<CartState>;
@@ -145,7 +178,7 @@ export function parseStoredCart(raw: string | null): CartState {
         entry.servingId === "one" || entry.servingId === "two"
           ? entry.servingId
           : undefined;
-      const item = itemsById.get(entry.itemId);
+      const item = catalog.get(entry.itemId);
       if (!item || !item.available || unitPriceFor(item, servingId) === null) {
         continue;
       }

@@ -2,6 +2,24 @@ import type { Locale } from "@/lib/i18n";
 
 type Localized = Record<Locale, string>;
 
+/** Official order number (wa.me format: country code + number, digits only). */
+const OFFICIAL_WHATSAPP = "97451184219";
+
+/**
+ * A staging or sandbox deployment can set NEXT_PUBLIC_WHATSAPP_NUMBER so its
+ * test orders never reach the restaurant. Production sets no override and
+ * always uses the official number.
+ */
+const override = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.trim() ?? "";
+const whatsappNumber = /^\d{8,15}$/.test(override) ? override : OFFICIAL_WHATSAPP;
+
+/** "97451184219" → "+974 5118 4219". */
+function displayNumber(digits: string): string {
+  return digits.length === 11 && digits.startsWith("974")
+    ? `+974 ${digits.slice(3, 7)} ${digits.slice(7)}`
+    : `+${digits}`;
+}
+
 /**
  * Restaurant settings. Values set to `null` are not confirmed yet and must
  * not appear on the customer-facing site until the owner confirms them.
@@ -16,9 +34,8 @@ export const restaurant = {
   } satisfies Record<Locale, string | null>,
 
   whatsapp: {
-    // wa.me format: country code + number, digits only.
-    number: "97451184219",
-    display: "+974 5118 4219",
+    number: whatsappNumber,
+    display: displayNumber(whatsappNumber),
   },
 
   currency: {
@@ -46,6 +63,8 @@ export const restaurant = {
   socialLinks: null as Record<string, string> | null,
 } as const;
 
-// Production URL, e.g. https://example.com. Not confirmed yet; when unset,
-// absolute URLs (canonical, hreflang, Open Graph) are left out of metadata.
-export const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || null;
+// Public address of the live site (Amplify). Used for absolute links in
+// metadata, e.g. share previews. Override with NEXT_PUBLIC_SITE_URL when a
+// custom domain is added.
+export const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://main.d3aemlkufsnwlw.amplifyapp.com";

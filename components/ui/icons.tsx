@@ -87,3 +87,54 @@ export function DishIcon(props: IconProps) {
     </Svg>
   );
 }
+
+export function LockIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <rect x="5" y="10.5" width="14" height="10" rx="2.5" />
+      <path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" />
+    </Svg>
+  );
+}
+
+export function MenuIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M4 7h16M4 12h16M4 17h10" />
+    </Svg>
+  );
+}
+
+export function CloseIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M6 6l12 12M18 6 6 18" />
+    </Svg>
+  );
+}
+
+/** Points forward in the reading direction (flips in RTL). */
+export function ArrowIcon({ className = "size-4" }: IconProps) {
+  return (
+    <Svg className={`${className} rtl:-scale-x-100`}>
+      <path d="M5 12h14M13 6l6 6-6 6" />
+    </Svg>
+  );
+}
+
+export function TagIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M3.5 12.5V5a1.5 1.5 0 0 1 1.5-1.5h7.5l8 8-9 9-8-8Z" />
+      <circle cx="8.5" cy="8.5" r="1.5" />
+    </Svg>
+  );
+}
+
+export function SendIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M4 12 20 4l-6 16-3-7-7-1Z" />
+    </Svg>
+  );
+}

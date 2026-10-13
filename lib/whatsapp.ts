@@ -15,6 +15,12 @@ export type OrderDetails = {
   totals: CartTotals;
   fulfillment: Fulfillment;
   customer: CheckoutForm;
+  /**
+   * Site origin, e.g. https://example.com. When set, each item gets a public
+   * link to its photo. A wa.me link carries text only, so the photo travels
+   * as a link (WhatsApp may show a preview), not as an attachment.
+   */
+  origin?: string;
 };
 
 // Unicode directional isolates (invisible).
@@ -39,7 +45,7 @@ function arabicCalculationLine(unit: number, quantity: number, total: number): s
 
 /** Builds the order text in the site language. */
 export function buildOrderMessage(order: OrderDetails): string {
-  const { locale, lines, totals, fulfillment, customer } = order;
+  const { locale, lines, totals, fulfillment, customer, origin } = order;
   const t = dictionaries[locale].whatsapp;
   const servingLabels = dictionaries[locale].menu.serving;
   const price = (amount: number) => formatPrice(amount, locale);
@@ -59,6 +65,9 @@ export function buildOrderMessage(order: OrderDetails): string {
           : `${price(line.unitPrice)} × ${line.quantity} = ${price(line.lineTotal)}`
       }`,
     );
+    if (origin && line.item.image) {
+      out.push(`   ${t.image}: ${origin}/api/img/${encodeURIComponent(line.item.id)}`);
+    }
   });
   out.push("");
 

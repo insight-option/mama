@@ -68,7 +68,14 @@ export function CheckoutForm({
     setShowSummary(false);
 
     const url = buildWhatsAppUrl(
-      buildOrderMessage({ locale, lines, totals, fulfillment, customer: values }),
+      buildOrderMessage({
+        locale,
+        lines,
+        totals,
+        fulfillment,
+        customer: values,
+        origin: window.location.origin,
+      }),
     );
     window.open(url, "_blank", "noopener,noreferrer");
     onSent(url);

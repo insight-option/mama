@@ -123,6 +123,7 @@ type Dictionary = {
     unit: string;
     landmark: string;
     notes: string;
+    image: string;
   };
   footer: { navLabel: string; rights: string };
 };
@@ -269,6 +270,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       unit: "الفيلا / الشقة",
       landmark: "أقرب معلم",
       notes: "ملاحظات",
+      image: "الصورة",
     },
     footer: { navLabel: "روابط سريعة", rights: "جميع الحقوق محفوظة." },
   },
@@ -414,6 +416,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       unit: "Villa / apartment",
       landmark: "Landmark",
       notes: "Notes",
+      image: "Photo",
     },
     footer: { navLabel: "Quick links", rights: "All rights reserved." },
   },

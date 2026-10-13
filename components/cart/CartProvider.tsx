@@ -11,6 +11,8 @@ import {
 import {
   addLine,
   computeTotals,
+  createCatalog,
+  type Catalog,
   emptyCart,
   parseStoredCart,
   removeLine,
@@ -22,7 +24,7 @@ import {
   type Fulfillment,
   type ResolvedLine,
 } from "@/lib/cart";
-import type { ServingId } from "@/types/menu";
+import type { MenuItem, ServingId } from "@/types/menu";
 
 type CartContextValue = {
   /** False until the stored cart has been read on the client. */
@@ -41,31 +43,39 @@ type CartContextValue = {
 
 const CartContext = createContext<CartContextValue | null>(null);
 
-function readStorage(): CartState {
+function readStorage(catalog: Catalog): CartState {
   try {
-    return parseStoredCart(window.localStorage.getItem(STORAGE_KEY));
+    return parseStoredCart(window.localStorage.getItem(STORAGE_KEY), catalog);
   } catch {
     return emptyCart;
   }
 }
 
-export function CartProvider({ children }: { children: React.ReactNode }) {
+export function CartProvider({
+  products,
+  children,
+}: {
+  /** Current catalogue; prices and availability come from here. */
+  products: MenuItem[];
+  children: React.ReactNode;
+}) {
+  const catalog = useMemo(() => createCatalog(products), [products]);
   const [state, setState] = useState<CartState>(emptyCart);
   const [ready, setReady] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
   // Load after mount so server and first client render match.
   useEffect(() => {
-    setState(readStorage());
+    setState(readStorage(catalog));
     setReady(true);
 
     // Keep other open tabs in sync.
     const onStorage = (event: StorageEvent) => {
-      if (event.key === STORAGE_KEY) setState(readStorage());
+      if (event.key === STORAGE_KEY) setState(readStorage(catalog));
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
-  }, []);
+  }, [catalog]);
 
   useEffect(() => {
     if (!ready) return;
@@ -96,7 +106,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const close = useCallback(() => setIsOpen(false), []);
 
   const value = useMemo<CartContextValue>(() => {
-    const lines = resolveLines(state.lines);
+    const lines = resolveLines(state.lines, catalog);
     return {
       ready,
       lines,
@@ -110,7 +120,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       open,
       close,
     };
-  }, [state, ready, isOpen, add, setQuantity, remove, setFulfillment, open, close]);
+  }, [state, catalog, ready, isOpen, add, setQuantity, remove, setFulfillment, open, close]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

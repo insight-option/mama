@@ -1,22 +1,35 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useCart } from "@/components/cart/CartProvider";
-import { CheckIcon, PlusIcon } from "@/components/ui/icons";
-import { Price } from "@/components/ui/Price";
+import { CheckIcon, PlusIcon, TagIcon } from "@/components/ui/icons";
+import { PriceTag } from "@/components/ui/PriceTag";
+import { effectivePriceFor } from "@/lib/cart";
 import { dictionaries } from "@/lib/dictionaries";
 import type { Locale } from "@/lib/i18n";
+import { siteCopy } from "@/lib/site-copy";
 import type { MenuItem, ServingId } from "@/types/menu";
 import { DishImage } from "./DishImage";
 import { ServingSelector } from "./ServingSelector";
 
 /**
- * Card order: photo, name, ingredients, then either the fixed price or the
- * serving options (each showing its own price), then add to cart.
+ * Card order: photo, name, ingredients, then either the price or the
+ * serving options (each with its own price), then add to cart. The photo
+ * and name link to the dish page.
  */
-export function DishCard({ item, locale }: { item: MenuItem; locale: Locale }) {
+export function DishCard({
+  item,
+  locale,
+  priority,
+}: {
+  item: MenuItem;
+  locale: Locale;
+  priority?: boolean;
+}) {
   const t = dictionaries[locale].menu;
   const tc = dictionaries[locale].cart;
+  const copy = siteCopy[locale].product;
   const { add } = useCart();
   const [serving, setServing] = useState<ServingId>("one");
   const [justAdded, setJustAdded] = useState(false);
@@ -33,29 +46,49 @@ export function DishCard({ item, locale }: { item: MenuItem; locale: Locale }) {
   };
 
   const { pricing } = item;
-
+  const href = `/${locale}/menu/${item.id}`;
   const ingredients = item.ingredients?.[locale];
   const separator = locale === "ar" ? "، " : ", ";
   const titleId = `dish-${item.id}`;
+  const offerLabel = item.offer?.label?.[locale] || copy.offer;
+
+  const offerPrices =
+    pricing.type === "serving" && item.offer
+      ? {
+          one: effectivePriceFor(item, "one") ?? undefined,
+          two: effectivePriceFor(item, "two") ?? undefined,
+        }
+      : undefined;
 
   return (
     <article
       aria-labelledby={titleId}
-      className="group flex w-full flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_1px_2px_rgb(11_37_24/0.04)] transition-shadow hover:shadow-[0_8px_24px_rgb(11_37_24/0.08)]"
+      className="group flex w-full flex-col overflow-hidden rounded-card bg-surface shadow-soft ring-1 ring-line/70 transition-all duration-500 ease-out hover:-translate-y-1 hover:shadow-lift"
     >
-      <DishImage
-        image={item.image}
-        locale={locale}
-        pendingLabel={t.photoPending}
-      />
+      <Link href={href} tabIndex={-1} aria-hidden="true" className="relative block">
+        <DishImage
+          image={item.image}
+          locale={locale}
+          pendingLabel={t.photoPending}
+          priority={priority}
+        />
+        {item.offer && (
+          <span className="absolute start-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-leaf px-3 py-1.5 text-xs font-extrabold text-night shadow-soft">
+            <TagIcon className="size-3.5" />
+            {offerLabel}
+          </span>
+        )}
+      </Link>
 
-      <div className="flex flex-1 flex-col p-4">
-        <h4 id={titleId} className="text-lg font-extrabold leading-snug text-forest">
-          {item.name[locale]}
-        </h4>
+      <div className="flex flex-1 flex-col p-5">
+        <h3 id={titleId} className="font-display text-xl leading-snug text-forest">
+          <Link href={href} className="hover:text-leaf">
+            {item.name[locale]}
+          </Link>
+        </h3>
 
-        {ingredients && (
-          <p className="mt-1 text-sm leading-relaxed text-muted">
+        {ingredients && ingredients.length > 0 && (
+          <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-muted">
             {ingredients.join(separator)}
           </p>
         )}
@@ -66,14 +99,14 @@ export function DishCard({ item, locale }: { item: MenuItem; locale: Locale }) {
           </p>
         )}
 
-        <div className="mt-auto space-y-3 pt-4">
+        <div className="mt-auto space-y-3 pt-5">
           {pricing.type === "fixed" ? (
             <p>
-              <Price
-                amount={pricing.price}
+              <PriceTag
+                amount={effectivePriceFor(item) ?? pricing.price}
+                regular={pricing.price}
                 locale={locale}
-                className="text-2xl font-extrabold text-ink"
-                currencyClassName="text-base font-bold"
+                regularLabel={copy.regularPrice}
               />
             </p>
           ) : (
@@ -82,6 +115,7 @@ export function DishCard({ item, locale }: { item: MenuItem; locale: Locale }) {
               legend={t.servingLegend}
               labels={t.serving}
               options={pricing.options}
+              offerPrices={offerPrices}
               value={serving}
               onChange={setServing}
               locale={locale}
@@ -94,10 +128,10 @@ export function DishCard({ item, locale }: { item: MenuItem; locale: Locale }) {
             onClick={handleAdd}
             disabled={!item.available}
             aria-label={`${tc.add}: ${item.name[locale]}`}
-            className={`flex min-h-12 w-full items-center justify-center gap-2 rounded-full px-4 font-bold transition-colors disabled:cursor-not-allowed disabled:bg-line disabled:text-muted ${
+            className={`flex min-h-12 w-full items-center justify-center gap-2 rounded-full px-4 font-bold transition-all duration-300 disabled:cursor-not-allowed disabled:bg-line disabled:text-muted ${
               justAdded
-                ? "bg-leaf text-forest"
-                : "bg-forest text-white hover:bg-forest/90"
+                ? "bg-leaf text-night"
+                : "bg-forest text-white hover:bg-night"
             }`}
           >
             {justAdded ? <CheckIcon /> : <PlusIcon />}

@@ -4,11 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:mock": "node scripts/dev-mock.mjs",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "tsx --test tests/*.test.ts"
   },
   "dependencies": {
+    "@aws-amplify/adapter-nextjs": "~1.4.3",
     "@aws-amplify/ui-react": "^6.5.5",
     "aws-amplify": "^6.6.6",
     "next": "14.2.10",
