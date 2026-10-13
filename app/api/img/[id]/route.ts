@@ -14,8 +14,18 @@ const { runWithAmplifyServerContext } = createServerRunner({ config: outputs });
 
 export const revalidate = 60;
 
+/**
+ * Redirect to a file on this site. The Location stays relative so the
+ * browser or link-preview bot resolves it against the address it asked for:
+ * behind Amplify Hosting the server only sees an internal host
+ * (localhost:3000), so an absolute URL built from request.url breaks.
+ */
+function redirectOnSite(path: string) {
+  return new Response(null, { status: 302, headers: { Location: path } });
+}
+
 export async function GET(
-  request: Request,
+  _request: Request,
   { params }: { params: { id: string } },
 ) {
   const { item, record } = await getProduct(decodeURIComponent(params.id));
@@ -23,13 +33,13 @@ export async function GET(
   // Before products are imported, the bundled menu is the catalogue.
   if (!record) {
     if (item?.image && !item.image.remote) {
-      return Response.redirect(new URL(encodeURI(item.image.src), request.url), 302);
+      return redirectOnSite(encodeURI(item.image.src));
     }
     return new Response("Not found", { status: 404 });
   }
 
   if (record.imageKey && LOCAL_MOCK) {
-    return Response.redirect(new URL(`/api/local-mock/files/${record.imageKey}`, request.url), 302);
+    return redirectOnSite(`/api/local-mock/files/${record.imageKey}`);
   }
 
   if (record.imageKey) {
@@ -50,7 +60,7 @@ export async function GET(
   }
 
   if (record.imagePath) {
-    return Response.redirect(new URL(encodeURI(record.imagePath), request.url), 302);
+    return redirectOnSite(encodeURI(record.imagePath));
   }
   return new Response("No image", { status: 404 });
 }
