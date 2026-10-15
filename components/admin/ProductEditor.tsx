@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { categories } from "@/data/menu";
 import { adminCopy } from "@/lib/admin-copy";
 import { backendReady } from "@/lib/admin/amplify";
+import { parseLocalizedNumber } from "@/lib/admin/form-values";
 import {
   createProduct,
   deleteImage,
@@ -73,7 +74,9 @@ const emptyForm: Form = {
 const num = (v?: number | null) => (typeof v === "number" ? String(v) : "");
 const lines = (v?: (string | null)[] | null) => (v ?? []).filter(Boolean).join("\n");
 const toList = (v: string) => v.split(/\n|،|,/).map((s) => s.trim()).filter(Boolean);
-const toNumber = (v: string) => (v.trim() === "" ? null : Number(v.replace(",", ".")));
+// Western or Arabic-Indic digits, with "." "," "٫" or "،" before up to 2 decimals,
+// as typed on an Arabic keyboard. Anything ambiguous shows an error instead.
+const toNumber = parseLocalizedNumber;
 
 function fromRecord(r: ProductRecord): Form {
   return {
@@ -200,7 +203,8 @@ export function ProductEditor({ locale, mode }: { locale: Locale; mode: "new" | 
         if (two && !below(two, form.priceTwo)) e.offerPriceTwo = t.errors.offerPrice;
       }
     }
-    if (form.sortOrder.trim() && !Number.isInteger(Number(form.sortOrder))) e.sortOrder = t.errors.price;
+    const order = toNumber(form.sortOrder);
+    if (order !== null && !Number.isInteger(order)) e.sortOrder = t.errors.wholeNumber;
     return e;
   };
 
@@ -270,7 +274,7 @@ export function ProductEditor({ locale, mode }: { locale: Locale; mode: "new" | 
         imageLowResolution: imageKey ? false : (record?.imageLowResolution ?? false),
         available: form.available,
         featured: form.featured,
-        sortOrder: form.sortOrder.trim() ? Number(form.sortOrder) : null,
+        sortOrder: toNumber(form.sortOrder),
       };
 
       const saved = record ? await updateProduct(input) : await createProduct(input);

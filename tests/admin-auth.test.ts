@@ -8,6 +8,7 @@ import {
   loginErrorKey,
   newPasswordFailure,
 } from "@/lib/admin/auth-errors";
+import { parseLocalizedNumber } from "@/lib/admin/form-values";
 
 const cognito = (name: string, message = "") => Object.assign(new Error(message), { name });
 
@@ -78,4 +79,14 @@ test("console diagnostics carry only the code and Cognito's message", () => {
     describeError(cognito("NotAuthorizedException", "Invalid session for the user, session is expired.")),
     "NotAuthorizedException: Invalid session for the user, session is expired.",
   );
+});
+
+test("admin number fields accept Arabic-Indic digits and decimal separators", () => {
+  assert.equal(parseLocalizedNumber("٤٠"), 40);
+  assert.equal(parseLocalizedNumber("٤٫٥"), 4.5);
+  assert.equal(parseLocalizedNumber("4,5"), 4.5);
+  assert.equal(parseLocalizedNumber("۱۲"), 12);
+  assert.equal(parseLocalizedNumber(" 33 "), 33);
+  assert.equal(parseLocalizedNumber(""), null);
+  assert.ok(Number.isNaN(parseLocalizedNumber("abc")));
 });

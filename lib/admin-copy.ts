@@ -102,7 +102,7 @@ type AdminCopy = {
     saving: string;
     saved: string;
     notFound: string;
-    errors: Record<"required" | "price" | "offerPrice" | "image" | "save" | "load", string>;
+    errors: Record<"required" | "price" | "wholeNumber" | "offerPrice" | "image" | "save" | "load", string>;
   };
 };
 
@@ -235,7 +235,8 @@ export const adminCopy: Record<Locale, AdminCopy> = {
       notFound: "المنتج غير موجود.",
       errors: {
         required: "هذا الحقل مطلوب.",
-        price: "أدخل سعراً أكبر من صفر.",
+        price: "أدخل سعراً أكبر من صفر، مثل 45 أو ٤٥ أو 82.5 (بدون فواصل للآلاف).",
+        wholeNumber: "أدخل رقماً صحيحاً، مثل 1 أو 2.",
         offerPrice: "سعر العرض يجب أن يكون أكبر من صفر وأقل من السعر العادي.",
         image: "تعذّرت قراءة الصورة. استخدم JPG أو PNG أو WebP.",
         save: "تعذّر الحفظ. تحقق من الاتصال والصلاحيات وحاول مجدداً.",
@@ -371,7 +372,8 @@ export const adminCopy: Record<Locale, AdminCopy> = {
       notFound: "Product not found.",
       errors: {
         required: "This field is required.",
-        price: "Enter a price greater than zero.",
+        price: "Enter a price greater than zero, such as 45, ٤٥ or 82.5 (no thousands separators).",
+        wholeNumber: "Enter a whole number, such as 1 or 2.",
         offerPrice: "The offer price must be above zero and below the regular price.",
         image: "Could not read the image. Use JPG, PNG or WebP.",
         save: "Could not save. Check your connection and permissions, then try again.",
