@@ -28,7 +28,6 @@ type Dictionary = {
     serving: Record<ServingId, string>;
     unavailable: string;
     photoPending: string;
-    pdfLink: string;
   };
   delivery: {
     title: string;
@@ -153,7 +152,6 @@ export const dictionaries: Record<Locale, Dictionary> = {
       serving: { one: "شخص واحد", two: "شخصين" },
       unavailable: "غير متوفر حالياً",
       photoPending: "صورة الطبق قريباً",
-      pdfLink: "عرض القائمة بصيغة PDF",
     },
     delivery: {
       title: "التوصيل والاستلام",
@@ -181,7 +179,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       phoneNote: "اتصل بنا مباشرة",
       phoneCta: "اتصل الآن",
       menuLabel: "القائمة الكاملة",
-      menuNote: "نسخة PDF من قائمة الطعام",
+      menuNote: "كل الأطباق بالصور والأسعار",
       menuCta: "عرض القائمة",
     },
     cart: {
@@ -299,7 +297,6 @@ export const dictionaries: Record<Locale, Dictionary> = {
       serving: { one: "1 person", two: "2 people" },
       unavailable: "Currently unavailable",
       photoPending: "Dish photo coming soon",
-      pdfLink: "View menu as PDF",
     },
     delivery: {
       title: "Delivery & pickup",
@@ -327,7 +324,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       phoneNote: "Call us directly",
       phoneCta: "Call now",
       menuLabel: "Full menu",
-      menuNote: "PDF version of the menu",
+      menuNote: "Every dish with photos and prices",
       menuCta: "View menu",
     },
     cart: {

@@ -28,6 +28,9 @@ const nextConfig = {
     return [
       // Arabic is the default language.
       { source: "/", destination: "/ar", permanent: false },
+      // The menu is a web page, never a PDF. Old shared links to the former
+      // menu PDF (e.g. /Mama%20Food%20Menu%20V-2.pdf) open the menu instead.
+      { source: "/:file(Mama.+Menu.+\\.pdf)", destination: "/ar/menu", permanent: false },
     ];
   },
 };

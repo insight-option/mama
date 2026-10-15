@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { restaurant } from "@/config/restaurant";
-import { menuPdfPath } from "@/data/menu";
 import { dictionaries } from "@/lib/dictionaries";
 import type { Locale } from "@/lib/i18n";
 import { pageIds, pagePath, siteCopy } from "@/lib/site-copy";
@@ -33,16 +32,6 @@ export function SiteFooter({ locale }: { locale: Locale }) {
                 </Link>
               </li>
             ))}
-            <li>
-              <a
-                href={menuPdfPath}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex min-h-10 items-center transition-colors hover:text-white"
-              >
-                {t.menu.pdfLink}
-              </a>
-            </li>
           </ul>
         </nav>
 

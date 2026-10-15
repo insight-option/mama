@@ -132,7 +132,7 @@ export function CartDrawer({ locale }: { locale: Locale }) {
           <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center">
             <p className="text-lg text-muted">{t.empty}</p>
             <a
-              href="#menu"
+              href={`/${locale}/menu`}
               onClick={() => dialogRef.current?.close()}
               className="inline-flex min-h-11 items-center rounded-full bg-forest px-6 font-bold text-white hover:bg-forest/90"
             >

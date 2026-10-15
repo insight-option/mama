@@ -1,8 +1,5 @@
 import type { MenuCategory, MenuImage, MenuItem } from "@/types/menu";
 
-/** Menu PDF supplied by the restaurant (public/Mama Food Menu V-2.pdf). */
-export const menuPdfPath = "/Mama%20Food%20Menu%20V-2.pdf";
-
 export const categories: MenuCategory[] = [
   { id: "specials", name: { ar: "طبخات ماما", en: "Mama’s Specials" } },
   { id: "healthy", name: { ar: "الأطباق الصحية", en: "Healthy Meals" } },
@@ -15,7 +12,8 @@ export const categories: MenuCategory[] = [
 ];
 
 // Dish photos. Pasta, salads and healthy meals follow the owner-approved
-// official menu (Mama Food Menu V-2.pdf): each dish uses the photo printed
+// official menu (docs/Mama Food Menu V-2.pdf, source material only; the site
+// never links to it): each dish uses the photo printed
 // beside it there. Where the same photo exists as a supplied individual file
 // (828 px wide), that higher-resolution file is used; otherwise the photo is
 // extracted from the PDF into /images/menu/. Dishes without an approved

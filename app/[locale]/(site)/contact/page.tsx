@@ -3,10 +3,9 @@ import { PageHeader } from "@/components/site/SectionHeader";
 import { ChatIcon, DocumentIcon, PhoneIcon } from "@/components/ui/icons";
 import { revealDelay } from "@/components/ui/reveal-delay";
 import { restaurant } from "@/config/restaurant";
-import { menuPdfPath } from "@/data/menu";
 import { dictionaries } from "@/lib/dictionaries";
 import type { Locale } from "@/lib/i18n";
-import { siteCopy, whatsappLink } from "@/lib/site-copy";
+import { pagePath, siteCopy, whatsappLink } from "@/lib/site-copy";
 
 export function generateMetadata({ params }: { params: { locale: Locale } }): Metadata {
   const t = dictionaries[params.locale].contact;
@@ -43,8 +42,7 @@ export default function ContactPage({ params }: { params: { locale: Locale } }) 
       label: t.menuLabel,
       note: t.menuNote,
       cta: t.menuCta,
-      href: menuPdfPath,
-      external: true,
+      href: pagePath(locale, "menu"),
     },
   ];
 
